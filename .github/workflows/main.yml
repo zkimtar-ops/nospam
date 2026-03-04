@@ -1,0 +1,40 @@
+name: Build NoSpam Japan APK
+
+# تشغيل البناء تلقائياً عند دفع (Push) أي كود للفرع الرئيسي
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. جلب الكود من المستودع
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. إعداد بيئة الجافا (إصدار 17 مطلوب لهذا المشروع)
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      # 3. إعطاء صلاحية التنفيذ لملف Gradle
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 4. بناء نسخة الـ APK (Debug)
+      - name: Build with Gradle
+        run: ./gradlew assembleDebug
+
+      # 5. رفع ملف الـ APK الناتج ليكون متاحاً للتحميل
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NoSpam-Japan-Debug-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
