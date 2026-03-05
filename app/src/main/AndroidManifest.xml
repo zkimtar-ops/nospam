@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- تم إزالة سمة package من هنا لأنها معرفة في build.gradle كـ namespace -->
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.ANSWER_PHONE_CALLS" />
     <uses-permission android:name="android.permission.READ_CALL_LOG" />
 
+    <!-- تم كتابة الاسم والأيقونة هنا يدوياً لضمان نجاح البناء فورا -->
     <application
         android:allowBackup="true"
-        android:icon="@drawable/ic_launcher_foreground"
-        android:label="@string/app_name"
+        android:label="Safety Call Japan"
+        android:icon="@android:drawable/sym_def_app_icon"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
 
