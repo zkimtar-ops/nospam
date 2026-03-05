@@ -1,22 +1,16 @@
 pluginManagement {
     repositories {
-        // المستودعات اللازمة لجلب إضافات البناء
         google()
         mavenCentral()
         gradlePluginPortal()
     }
 }
 dependencyResolutionManagement {
-    // إجبار المشروع على استخدام هذه المستودعات لجميع المكتبات لضمان التوافق
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
         mavenCentral()
     }
 }
-
-// اسم المشروع
 rootProject.name = "NoSpam Japan"
-
-// تضمين مجلد التطبيق
 include ':app'
