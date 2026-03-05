@@ -1,12 +1,28 @@
-// الملف الرئيسي لتعريف إصدارات محركات البناء
-plugins {
-    // تحديد إصدار محرك بناء تطبيقات أندرويد
-    id 'com.android.application' version '8.2.0' apply false
-    id 'com.android.library' version '8.2.0' apply false
-    
-    // دعم لغة كوتلن
-    id 'org.jetbrains.kotlin.android' version '1.9.0' apply false
-    
-    // محرك خدمات جوجل (الإصدار الذي طلبته 4.4.4)
-    id 'com.google.gms.google-services' version '4.4.4' apply false
+// هذا الملف هو الإعداد العام للمشروع (Project-level build file)
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        // محرك بناء أندرويد 8.2.0
+        classpath 'com.android.tools.build:gradle:8.2.0'
+        
+        // تحديث كوتلن إلى 1.9.22 لإصلاح خطأ HasConvention مع جرادل 8.2
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22"
+        
+        // إصدار خدمات جوجل
+        classpath 'com.google.gms:google-services:4.4.0'
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+tasks.register('clean', Delete) {
+    delete rootProject.buildDir
 }
