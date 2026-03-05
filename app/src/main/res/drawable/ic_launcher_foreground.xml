@@ -1,0 +1,14 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- خلفية الأيقونة (درع أحمر) -->
+    <path
+        android:fillColor="#c0392b"
+        android:pathData="M0,0h108v108h-108z" />
+    <!-- رمز الحماية الأبيض -->
+    <path
+        android:fillColor="#ffffff"
+        android:pathData="M54,20L20,35v25c0,21 34,28 34,28s34,-7 34,-28V35L54,20z M54,73.5c0,0 -20,-6.3 -20,-20.5V39.2l20,-8.8l20,8.8V53C74,67.2 54,73.5 54,73.5z" />
+</vector>
