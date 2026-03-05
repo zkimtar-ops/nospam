@@ -33,25 +33,23 @@ android {
         jvmTarget = '17'
     }
 
-    // هذا الجزء يمنع الخطأ الناتج عن تكرار ملفات المكتبات
     packagingOptions {
         resources {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
-            excludes += 'META-INF/versions/9/previous-compilation-data.bin'
             excludes += '**/kotlin_module'
             excludes += '**/metadata/bitmaps.proto'
             excludes += '**/ads-adservices-java_release.kotlin_module'
-            excludes += '**/ads-adservices_release.kotlin_module'
         }
     }
 }
 
-// إجبار المشروع على استخدام إصدارات متوافقة وحل النزاع الظاهر في سجل الخطأ
+// حل تعارض المكتبات الذي تسبب في توقف البناء
 configurations.all {
     resolutionStrategy {
+        force 'androidx.core:core-ktx:1.12.0'
         force 'androidx.credentials:credentials:1.2.2'
         force 'androidx.credentials:credentials-play-services-auth:1.2.2'
-        force 'androidx.core:core-ktx:1.12.0'
+        force 'androidx.appcompat:appcompat:1.6.1'
     }
 }
 
@@ -59,23 +57,11 @@ dependencies {
     implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.multidex:multidex:2.0.1'
 
+    // Firebase
     implementation platform('com.google.firebase:firebase-bom:33.1.2')
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-auth-ktx'
     implementation 'com.google.firebase:firebase-firestore-ktx'
-}
-
-if (file('google-services.json').exists()) {
-    apply plugin: 'com.google.gms.google-services'
-}
-// ضع هذا في نهاية ملف app/build.gradle
-configurations.all {
-    resolutionStrategy {
-        force 'androidx.core:core-ktx:1.12.0'
-        force 'androidx.credentials:credentials:1.2.2'
-        force 'androidx.credentials:credentials-play-services-auth:1.2.2'
-    }
 }
