@@ -1,13 +1,8 @@
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
-    // تم إضافة الشرط لكي لا يفشل البناء إذا لم ترفع ملف google-services.json بعد
+    // تطبيق الإضافة فقط في حال وجود ملف الإعدادات
     id 'com.google.gms.google-services' apply false
-}
-
-// تفعيل الإضافة يدوياً مع التحقق من وجود الملف
-if (file('google-services.json').exists()) {
-    apply plugin: 'com.google.gms.google-services'
 }
 
 android {
@@ -20,7 +15,9 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0"
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        
+        // تفعيل MultiDex للتعامل مع عدد كبير من المكتبات
+        multiDexEnabled true
     }
 
     buildTypes {
@@ -39,22 +36,23 @@ android {
         jvmTarget = '17'
     }
 
+    // حل مشكلة تكرار الملفات التي تسبب فشل البناء
     packagingOptions {
         resources {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
             excludes += 'META-INF/versions/9/previous-compilation-data.bin'
-            // حل مشكلة ملفات البروتوكول المتكررة
             excludes += '**/metadata/bitmaps.proto'
+            excludes += '**/ads-adservices-java_release.kotlin_module'
         }
     }
 }
 
-// حل مشكلة التعارض (Dependency Resolution Strategy)
+// إجبار النظام على استخدام إصدارات متوافقة لمنع الـ Conflict
 configurations.all {
     resolutionStrategy {
-        force 'androidx.datastore:datastore-preferences:1.0.0'
-        force 'androidx.datastore:datastore-core:1.0.0'
-        force 'androidx.datastore:datastore-preferences-core:1.0.0'
+        force 'androidx.core:core-ktx:1.12.0'
+        force 'androidx.appcompat:appcompat:1.6.1'
+        force 'androidx.credentials:credentials:1.2.2'
     }
 }
 
@@ -63,10 +61,16 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.multidex:multidex:2.0.1'
 
-    // Firebase BOM (الإصدار المستقر)
+    // Firebase (إصدار مستقر)
     implementation platform('com.google.firebase:firebase-bom:33.1.2')
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-auth-ktx'
     implementation 'com.google.firebase:firebase-firestore-ktx'
+}
+
+// تشغيل Google Services فقط إذا كان الملف موجوداً
+if (file('google-services.json').exists()) {
+    apply plugin: 'com.google.gms.google-services'
 }
