@@ -28,18 +28,38 @@ jobs:
 
       - name: Build Android App
         run: |
+          # 1. تثبيت كوردوفا
           npm install -g cordova --no-audit
-          rm -rf node_modules package-lock.json platforms plugins
           
+          # 2. إنشاء هيكل مشروع كوردوفا إذا لم يكن موجوداً
+          # هذا السطر يحل مشكلة "Not a Cordova-based project"
+          if [ ! -f config.xml ]; then
+            echo "إعداد هيكل مشروع كوردوفا الجديد..."
+            cordova create safety_project com.nospam.japan "Safety Call Japan"
+            cp -r safety_project/. .
+            rm -rf safety_project
+          fi
+
+          # 3. التأكد من وجود مجلد www وملف الواجهة
+          mkdir -p www
+          if [ -f app/src/main/assets/index.html ]; then
+            cp app/src/main/assets/index.html www/index.html
+          else
+            echo "<h1>Safety Call Japan</h1>" > www/index.html
+          fi
+          
+          # 4. إضافة المنصة والإضافات
           cordova platform add android@13.0.0 --save
           cordova plugin add cordova-plugin-android-permissions --save
           cordova plugin add cordova-plugin-device --save
           
+          # 5. تجهيز البيئة
           cordova prepare android
           
-          # إنشاء مفتاح التوقيع الدائم
+          # 6. إنشاء مفتاح التوقيع (release.jks)
           keytool -genkey -v -keystore release.jks -alias safety_key -keyalg RSA -keysize 2048 -validity 10000 -storepass 123456 -keypass 123456 -dname "CN=Zakaria, O=SafetyCallJapan" -deststoretype pkcs12
 
+          # 7. إعداد ملف البناء
           cat <<EOF > build.json
           {
               "android": {
@@ -53,10 +73,11 @@ jobs:
           }
           EOF
 
-          # بناء APK و AAB معاً
+          # 8. البناء النهائي
           cordova build android --release --buildConfig=build.json -- --packageType=apk
           cordova build android --release --buildConfig=build.json -- --packageType=bundle
 
+          # 9. تجميع المخرجات
           mkdir -p output
           cp platforms/android/app/build/outputs/apk/release/*.apk ./output/Safety_Call_V1.apk
           cp platforms/android/app/build/outputs/bundle/release/*.aab ./output/Safety_Call_V1.aab
