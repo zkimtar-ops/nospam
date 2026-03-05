@@ -1,41 +1,69 @@
-name: Build NoSpam Japan APK
+name: Safety_Call_Japan_Full_Package
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      # 1. جلب الكود الخاص بك من GitHub
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 2. إعداد الجافا (النسخة 17)
-      - name: Set up JDK 17
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      # 3. إعداد أداة Gradle من الإنترنت مباشرة (بدون الحاجة لملفات محلية)
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: 8.2 # سيقوم السيرفر بتحميل هذه النسخة تلقائياً
+          gradle-version: '8.7'
 
-      # 4. تشغيل عملية البناء باستخدام Gradle النظام
-      # لاحظ أننا نستخدم "gradle" وليس "./gradlew"
-      - name: Build with Gradle
-        run: gradle assembleDebug
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-      # 5. رفع تطبيق الـ APK الناتج للتحميل
-      - name: Upload APK Artifact
+      - name: Build Android App
+        run: |
+          npm install -g cordova --no-audit
+          rm -rf node_modules package-lock.json platforms plugins
+          
+          cordova platform add android@13.0.0 --save
+          cordova plugin add cordova-plugin-android-permissions --save
+          cordova plugin add cordova-plugin-device --save
+          
+          cordova prepare android
+          
+          # إنشاء مفتاح التوقيع الدائم
+          keytool -genkey -v -keystore release.jks -alias safety_key -keyalg RSA -keysize 2048 -validity 10000 -storepass 123456 -keypass 123456 -dname "CN=Zakaria, O=SafetyCallJapan" -deststoretype pkcs12
+
+          cat <<EOF > build.json
+          {
+              "android": {
+                  "release": {
+                      "keystore": "release.jks",
+                      "storePassword": "123456",
+                      "alias": "safety_key",
+                      "password": "123456"
+                  }
+              }
+          }
+          EOF
+
+          # بناء APK و AAB معاً
+          cordova build android --release --buildConfig=build.json -- --packageType=apk
+          cordova build android --release --buildConfig=build.json -- --packageType=bundle
+
+          mkdir -p output
+          cp platforms/android/app/build/outputs/apk/release/*.apk ./output/Safety_Call_V1.apk
+          cp platforms/android/app/build/outputs/bundle/release/*.aab ./output/Safety_Call_V1.aab
+          cp release.jks ./output/release.jks
+
+      - name: Upload Full Package
         uses: actions/upload-artifact@v4
         with:
-          name: NoSpam-Japan-Debug-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: SafeCall-Japan-Full-Package
+          path: output/
