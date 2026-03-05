@@ -1,37 +1,62 @@
-name: Build Anshin Guard APK
+name: Safety_Call_Japan_Final_Fix_V3
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    - name: set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: gradle
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
 
-    - name: Repair Gradle Wrapper
-      run: |
-        # حذف الملفات القديمة وتوليد ملفات تشغيل نظيفة مباشرة من السيرفر
-        rm -f gradlew
-        rm -f gradlew.bat
-        gradle wrapper --gradle-version 8.2
-        chmod +x gradlew
+      - name: Build Everything From Scratch
+        run: |
+          # 1. تنظيف البيئة تماماً وإصلاح ملفات التشغيل
+          rm -f gradlew gradlew.bat
+          gradle wrapper --gradle-version 8.2
+          chmod +x gradlew
 
-    - name: Build with Gradle
-      run: ./gradlew assembleDebug --stacktrace
+          # 2. إعداد خصائص الأندرويد لضمان التوافق
+          echo "android.useAndroidX=true" > gradle.properties
+          echo "android.enableJetifier=true" >> gradle.properties
+          echo "org.gradle.jvmargs=-Xmx2048m" >> gradle.properties
 
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: AnshinGuard-Debug-APK
-        path: app/build/outputs/apk/debug/app-debug.apk
+          # 3. إنشاء مفتاح التوقيع (JKS) تلقائياً
+          # Alias: safety_key | Pass: 123456
+          keytool -genkey -v -keystore release.jks -alias safety_key -keyalg RSA -keysize 2048 -validity 10000 -storepass 123456 -keypass 123456 -dname "CN=Zakaria, O=SafetyCallJapan" -deststoretype pkcs12
+
+          # 4. بناء APK الموقّع
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=$(pwd)/release.jks \
+            -Pandroid.injected.signing.store.password=123456 \
+            -Pandroid.injected.signing.key.alias=safety_key \
+            -Pandroid.injected.signing.key.password=123456 --stacktrace
+
+          # 5. بناء AAB الموقّع للمتجر
+          ./gradlew bundleRelease \
+            -Pandroid.injected.signing.store.file=$(pwd)/release.jks \
+            -Pandroid.injected.signing.store.password=123456 \
+            -Pandroid.injected.signing.key.alias=safety_key \
+            -Pandroid.injected.signing.key.password=123456
+
+          # 6. تجميع المخرجات النهائية
+          mkdir -p final_package
+          cp app/build/outputs/apk/release/*.apk ./final_package/Safety_Call_Japan_V3.apk
+          cp app/build/outputs/bundle/release/*.aab ./final_package/Safety_Call_Japan_V3.aab
+          cp release.jks ./final_package/release_key.jks
+
+      - name: Upload Complete Package (APK + AAB + JKS)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Safety-Call-Full-Bundle-V3
+          path: final_package/
