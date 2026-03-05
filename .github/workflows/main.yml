@@ -1,4 +1,4 @@
-name: Safety_Call_Japan_Full_Build_V2
+name: Safety_Call_Japan_Complete_Bundle
 
 on:
   push:
@@ -19,55 +19,48 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.2'
-
-      - name: Fix Gradlew and Build Package
+      - name: Fix Environment
         run: |
-          # 1. إصلاح وتوليد ملف التشغيل النظيف
+          # 1. إنشاء ملف الخصائص لتمكين AndroidX
+          echo "android.useAndroidX=true" > gradle.properties
+          echo "android.enableJetifier=true" >> gradle.properties
+          
+          # 2. إنشاء ملف google-services وهمي لكي لا يفشل البناء (إذا لم يرفعه المستخدم)
+          if [ ! -f "app/google-services.json" ]; then
+            echo '{"project_info":{"project_number":"0","project_id":"temp"},"client":[{"client_info":{"mobilesdk_app_id":"1:0:android:0","android_client_info":{"package_name":"com.nospam.japan"}},"api_key":[{"current_key":"temp"}]}]}' > app/google-services.json
+          fi
+
+          # 3. إصلاح وتوليد ملف gradlew
           rm -f gradlew
           gradle wrapper --gradle-version 8.2
           chmod +x gradlew
 
-          # 2. إنشاء مفتاح التوقيع JKS تلقائياً
-          # Alias: safety_key | Password: 123456
-          keytool -genkey -v \
-            -keystore release.jks \
-            -alias safety_key \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -storepass 123456 \
-            -keypass 123456 \
-            -dname "CN=Zakaria, O=SafetyCallJapan, C=JP" \
-            -deststoretype pkcs12
+          # 4. إنشاء مفتاح JKS (Alias: safety_key | Pass: 123456)
+          keytool -genkey -v -keystore release.jks -alias safety_key -keyalg RSA -keysize 2048 -validity 10000 -storepass 123456 -keypass 123456 -dname "CN=Zakaria, O=SafetyCallJapan" -deststoretype pkcs12
 
-          # 3. بناء نسخة الـ APK الموقعة
+      - name: Build All Formats (APK & AAB)
+        run: |
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/release.jks \
             -Pandroid.injected.signing.store.password=123456 \
             -Pandroid.injected.signing.key.alias=safety_key \
             -Pandroid.injected.signing.key.password=123456
 
-          # 4. بناء نسخة الـ AAB الموقعة (للمتجر)
           ./gradlew bundleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/release.jks \
             -Pandroid.injected.signing.store.password=123456 \
             -Pandroid.injected.signing.key.alias=safety_key \
             -Pandroid.injected.signing.key.password=123456
 
-          # 5. تجميع كل الملفات في مجلد المخرجات
-          mkdir -p final_output
-          cp app/build/outputs/apk/release/*.apk ./final_output/Safety_Call_Japan_V2.apk
-          cp app/build/outputs/bundle/release/*.aab ./final_output/Safety_Call_Japan_V2.aab
-          cp release.jks ./final_output/release_key.jks
-          
-          echo "تم بناء الحزمة الكاملة بنجاح"
+      - name: Prepare Final Artifacts
+        run: |
+          mkdir -p final_bundle
+          cp app/build/outputs/apk/release/*.apk ./final_bundle/Safety_Call_Japan_V1.apk
+          cp app/build/outputs/bundle/release/*.aab ./final_bundle/Safety_Call_Japan_V1.aab
+          cp release.jks ./final_bundle/release_key_zakaria.jks
 
-      - name: Upload Safety Call Full Package
+      - name: Upload Everything
         uses: actions/upload-artifact@v4
         with:
-          name: Safety-Call-Japan-Full-Bundle
-          path: final_output/
+          name: Safety-Call-Full-Package-V1
+          path: final_bundle/
