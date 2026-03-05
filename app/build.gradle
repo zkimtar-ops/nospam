@@ -1,12 +1,16 @@
-// إعدادات بناء التطبيق والمكتبات
 plugins {
     id 'com.android.application'
-    id 'kotlin-android'
-    id 'com.google.gms.google-services'
+    id 'org.jetbrains.kotlin.android'
+    // تم إضافة الشرط لكي لا يفشل البناء إذا لم ترفع ملف google-services.json بعد
+    id 'com.google.gms.google-services' apply false
+}
+
+// تفعيل الإضافة يدوياً مع التحقق من وجود الملف
+if (file('google-services.json').exists()) {
+    apply plugin: 'com.google.gms.google-services'
 }
 
 android {
-    // اسم الحزمة الرسمي الخاص بك
     namespace 'com.nospam.japan'
     compileSdk 34
 
@@ -16,7 +20,6 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0"
-
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -26,12 +29,32 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+
     kotlinOptions {
         jvmTarget = '17'
+    }
+
+    packagingOptions {
+        resources {
+            excludes += '/META-INF/{AL2.0,LGPL2.1}'
+            excludes += 'META-INF/versions/9/previous-compilation-data.bin'
+            // حل مشكلة ملفات البروتوكول المتكررة
+            excludes += '**/metadata/bitmaps.proto'
+        }
+    }
+}
+
+// حل مشكلة التعارض (Dependency Resolution Strategy)
+configurations.all {
+    resolutionStrategy {
+        force 'androidx.datastore:datastore-preferences:1.0.0'
+        force 'androidx.datastore:datastore-core:1.0.0'
+        force 'androidx.datastore:datastore-preferences-core:1.0.0'
     }
 }
 
@@ -41,8 +64,8 @@ dependencies {
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
 
-    // إعدادات Firebase باستخدام BOM الإصدار 34.9.0 كما طلبت
-    implementation platform('com.google.firebase:firebase-bom:34.9.0')
+    // Firebase BOM (الإصدار المستقر)
+    implementation platform('com.google.firebase:firebase-bom:33.1.2')
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-auth-ktx'
     implementation 'com.google.firebase:firebase-firestore-ktx'
