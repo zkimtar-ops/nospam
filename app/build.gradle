@@ -1,7 +1,6 @@
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
-    // تطبيق الإضافة فقط في حال وجود ملف الإعدادات
     id 'com.google.gms.google-services' apply false
 }
 
@@ -15,8 +14,6 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0"
-        
-        // تفعيل MultiDex للتعامل مع عدد كبير من المكتبات
         multiDexEnabled true
     }
 
@@ -36,23 +33,25 @@ android {
         jvmTarget = '17'
     }
 
-    // حل مشكلة تكرار الملفات التي تسبب فشل البناء
+    // هذا الجزء يمنع الخطأ الناتج عن تكرار ملفات المكتبات
     packagingOptions {
         resources {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
             excludes += 'META-INF/versions/9/previous-compilation-data.bin'
+            excludes += '**/kotlin_module'
             excludes += '**/metadata/bitmaps.proto'
             excludes += '**/ads-adservices-java_release.kotlin_module'
+            excludes += '**/ads-adservices_release.kotlin_module'
         }
     }
 }
 
-// إجبار النظام على استخدام إصدارات متوافقة لمنع الـ Conflict
+// إجبار المشروع على استخدام إصدارات متوافقة وحل النزاع الظاهر في سجل الخطأ
 configurations.all {
     resolutionStrategy {
-        force 'androidx.core:core-ktx:1.12.0'
-        force 'androidx.appcompat:appcompat:1.6.1'
         force 'androidx.credentials:credentials:1.2.2'
+        force 'androidx.credentials:credentials-play-services-auth:1.2.2'
+        force 'androidx.core:core-ktx:1.12.0'
     }
 }
 
@@ -63,14 +62,12 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.multidex:multidex:2.0.1'
 
-    // Firebase (إصدار مستقر)
     implementation platform('com.google.firebase:firebase-bom:33.1.2')
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-auth-ktx'
     implementation 'com.google.firebase:firebase-firestore-ktx'
 }
 
-// تشغيل Google Services فقط إذا كان الملف موجوداً
 if (file('google-services.json').exists()) {
     apply plugin: 'com.google.gms.google-services'
 }
