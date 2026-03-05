@@ -1,4 +1,4 @@
-name: Safety_Call_Japan_Final_V5
+name: Safety_Call_Final_Emergency_Fix
 
 on:
   push:
@@ -18,35 +18,35 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Fix and Build
+      - name: Create Missing Folders and Files
         run: |
-          # 1. تنظيف شامل وتوليد ملفات تشغيل نظيفة
-          rm -f gradlew gradlew.bat
+          # إنشاء المجلدات إذا كانت مفقودة لضمان عدم فشل AAPT
+          mkdir -p app/src/main/res/values
+          mkdir -p app/src/main/res/drawable
+          
+          # التأكد من وجود ملف strings.xml
+          echo '<resources><string name="app_name">Safety Call Japan</string></resources>' > app/src/main/res/values/strings.xml
+
+      - name: Build and Sign
+        run: |
+          rm -f gradlew
           gradle wrapper --gradle-version 8.2
           chmod +x gradlew
 
-          # 2. إعداد الذاكرة لمنع انهيار DefaultPlanExecutor
-          echo "org.gradle.jvmargs=-Xmx3072m -Dfile.encoding=UTF-8" > gradle.properties
-          echo "android.useAndroidX=true" >> gradle.properties
-          echo "android.enableJetifier=true" >> gradle.properties
+          # إنشاء المفتاح JKS
+          keytool -genkey -v -keystore release.jks -alias safety_key -keyalg RSA -keysize 2048 -validity 10000 -storepass 123456 -keypass 123456 -dname "CN=Zakaria" -deststoretype pkcs12
 
-          # 3. توليد المفتاح تلقائياً
-          keytool -genkey -v -keystore release.jks -alias safety_key -keyalg RSA -keysize 2048 -validity 10000 -storepass 123456 -keypass 123456 -dname "CN=Zakaria, O=SafetyCall" -deststoretype pkcs12
-
-          # 4. البناء النهائي APK
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/release.jks \
             -Pandroid.injected.signing.store.password=123456 \
             -Pandroid.injected.signing.key.alias=safety_key \
             -Pandroid.injected.signing.key.password=123456 --no-daemon
 
-          # 5. تنظيم المخرجات
-          mkdir -p output
-          cp app/build/outputs/apk/release/*.apk output/Safety_Call_Final_V5.apk
-          cp release.jks output/release_key.jks
+          mkdir output
+          cp app/build/outputs/apk/release/*.apk output/SafetyCall_Final.apk
 
-      - name: Upload Final Package
+      - name: Download APK
         uses: actions/upload-artifact@v4
         with:
-          name: Safety-Call-V5-Package
+          name: Safety-Call-Final-APK
           path: output/
