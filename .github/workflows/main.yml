@@ -1,4 +1,4 @@
-name: Safety_Call_Japan_Final_V4
+name: Safety_Call_Japan_Final_V5
 
 on:
   push:
@@ -18,39 +18,35 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Nuclear Clean and Build
+      - name: Fix and Build
         run: |
-          # 1. تنظيف شامل للملفات المكسورة التي تسبب "Broken Pipe"
-          rm -rf .gradle gradlew gradlew.bat gradle/
-          
-          # 2. توليد محرك Gradle جديد تماماً
-          gradle wrapper --gradle-version 8.2.1
+          # 1. تنظيف شامل وتوليد ملفات تشغيل نظيفة
+          rm -f gradlew gradlew.bat
+          gradle wrapper --gradle-version 8.2
           chmod +x gradlew
 
-          # 3. إعداد خصائص الذاكرة لمنع انهيار السيرفر (حل مشكلة PlanExecutor)
-          echo "org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=512m" > gradle.properties
+          # 2. إعداد الذاكرة لمنع انهيار DefaultPlanExecutor
+          echo "org.gradle.jvmargs=-Xmx3072m -Dfile.encoding=UTF-8" > gradle.properties
           echo "android.useAndroidX=true" >> gradle.properties
           echo "android.enableJetifier=true" >> gradle.properties
-          echo "org.gradle.daemon=false" >> gradle.properties
 
-          # 4. إنشاء ملف JKS تلقائياً
+          # 3. توليد المفتاح تلقائياً
           keytool -genkey -v -keystore release.jks -alias safety_key -keyalg RSA -keysize 2048 -validity 10000 -storepass 123456 -keypass 123456 -dname "CN=Zakaria, O=SafetyCall" -deststoretype pkcs12
 
-          # 5. البناء مع تجاهل الأخطاء غير القاتلة (Force Build)
+          # 4. البناء النهائي APK
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/release.jks \
             -Pandroid.injected.signing.store.password=123456 \
             -Pandroid.injected.signing.key.alias=safety_key \
-            -Pandroid.injected.signing.key.password=123456 \
-            --no-daemon --stacktrace
+            -Pandroid.injected.signing.key.password=123456 --no-daemon
 
-          # 6. تجميع المخرجات
+          # 5. تنظيم المخرجات
           mkdir -p output
-          cp app/build/outputs/apk/release/*.apk output/Safety_Call_Final.apk
-          cp release.jks output/release.jks
+          cp app/build/outputs/apk/release/*.apk output/Safety_Call_Final_V5.apk
+          cp release.jks output/release_key.jks
 
-      - name: Download Final APK
+      - name: Upload Final Package
         uses: actions/upload-artifact@v4
         with:
-          name: Final-Production-App
+          name: Safety-Call-V5-Package
           path: output/
