@@ -1,28 +1,23 @@
-// هذا الملف هو الإعداد العام للمشروع (Project-level build file)
+// تم تنظيف هذا الملف وحذف "allprojects" لحل مشكلة التعارض مع settings.gradle
 buildscript {
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
-        // محرك بناء أندرويد 8.2.0
+        // محرك بناء أندرويد
         classpath 'com.android.tools.build:gradle:8.2.0'
         
-        // تحديث كوتلن إلى 1.9.22 لإصلاح خطأ HasConvention مع جرادل 8.2
+        // تحديث كوتلن إلى 1.9.22 لإصلاح الأخطاء السابقة
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22"
         
-        // إصدار خدمات جوجل
+        // خدمات جوجل
         classpath 'com.google.gms:google-services:4.4.0'
     }
 }
 
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
-
+// ملاحظة: لا تضف أي بلوك "repositories" أو "allprojects" هنا 
+// لأنها معرفة الآن في ملف settings.gradle
 tasks.register('clean', Delete) {
     delete rootProject.buildDir
 }
