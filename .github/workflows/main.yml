@@ -1,4 +1,4 @@
-name: Safety_Call_Final_Emergency_Fix
+name: Safety_Call_Japan_Emergency_Repair
 
 on:
   push:
@@ -18,24 +18,62 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Create Missing Folders and Files
+      - name: Force Create Missing Resources
         run: |
-          # إنشاء المجلدات إذا كانت مفقودة لضمان عدم فشل AAPT
+          # 1. إنشاء المجلدات الأساسية لضمان عدم فشل نظام الموارد AAPT
           mkdir -p app/src/main/res/values
           mkdir -p app/src/main/res/drawable
-          
-          # التأكد من وجود ملف strings.xml
-          echo '<resources><string name="app_name">Safety Call Japan</string></resources>' > app/src/main/res/values/strings.xml
+          mkdir -p app/src/main/assets
 
-      - name: Build and Sign
+          # 2. كتابة ملف نصوص التطبيق برمجياً
+          echo '<?xml version="1.0" encoding="utf-8"?><resources><string name="app_name">Safety Call Japan</string></resources>' > app/src/main/res/values/strings.xml
+
+          # 3. كتابة ملف الثيم برمجياً لإصلاح خطأ Resource Linking
+          echo '<?xml version="1.0" encoding="utf-8"?><resources><style name="Theme.NoSpamJapan" parent="Theme.AppCompat.Light.NoActionBar"><item name="android:windowFullscreen">true</item></style></resources>' > app/src/main/res/values/themes.xml
+
+          # 4. إنشاء أيقونة افتراضية بسيطة
+          echo '<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24"><path android:fillColor="#FF0000" android:pathData="M12,2L4,5v6.09c0,5.05 3.41,9.76 8,10.91c4.59,-1.15 8,-5.86 8,-10.91V5L12,2z"/></vector>' > app/src/main/res/drawable/ic_launcher_foreground.xml
+
+          # 5. إنشاء صفحة الـ HTML إذا كانت مفقودة
+          if [ ! -f "app/src/main/assets/index.html" ]; then
+            echo "<html><body style='background:white; text-align:center;'><h1>Safety Call Japan Ready</h1></body></html>" > app/src/main/assets/index.html
+          fi
+
+      - name: Fix Manifest and Build
         run: |
-          rm -f gradlew
+          # إصلاح ملف المانيفست ليتناسب مع الملفات التي أنشأناها
+          cat <<EOF > app/src/main/AndroidManifest.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.INTERNET" />
+              <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+              <uses-permission android:name="android.permission.ANSWER_PHONE_CALLS" />
+              <application
+                  android:allowBackup="true"
+                  android:label="@string/app_name"
+                  android:icon="@drawable/ic_launcher_foreground"
+                  android:theme="@style/Theme.NoSpamJapan">
+                  <activity android:name=".MainActivity" android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+                  <service android:name=".MyCallScreeningService" android:permission="android.permission.BIND_SCREENING_SERVICE" android:exported="true">
+                      <intent-filter><action android:name="android.telecom.CallScreeningService" /></intent-filter>
+                  </service>
+              </application>
+          </manifest>
+          EOF
+
+          # بناء وإصلاح ملفات gradlew
           gradle wrapper --gradle-version 8.2
           chmod +x gradlew
 
           # إنشاء المفتاح JKS
           keytool -genkey -v -keystore release.jks -alias safety_key -keyalg RSA -keysize 2048 -validity 10000 -storepass 123456 -keypass 123456 -dname "CN=Zakaria" -deststoretype pkcs12
 
+          # تشغيل البناء النهائي
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/release.jks \
             -Pandroid.injected.signing.store.password=123456 \
@@ -44,9 +82,10 @@ jobs:
 
           mkdir output
           cp app/build/outputs/apk/release/*.apk output/SafetyCall_Final.apk
+          cp release.jks output/release.jks
 
-      - name: Download APK
+      - name: Download Your Files
         uses: actions/upload-artifact@v4
         with:
-          name: Safety-Call-Final-APK
+          name: Full-App-Package
           path: output/
