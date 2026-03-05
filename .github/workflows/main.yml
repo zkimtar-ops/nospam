@@ -17,54 +17,38 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.2'
 
-      - name: Build and Sign Safety Call Japan
+      - name: Generate Clean Gradlew
         run: |
-          # 1. إعطاء صلاحيات التنفيذ للمحرك
+          # حذف أي ملف قديم مكسور وإنشاء واحد جديد ونظيف
+          rm -f gradlew
+          gradle wrapper --gradle-version 8.2
           chmod +x gradlew
 
-          # 2. قبول التراخيص
-          yes | sdkmanager --licenses || true
+      - name: Build and Sign App
+        run: |
+          # 1. إنشاء مفتاح التوقيع (JKS)
+          keytool -genkey -v -keystore release.jks -alias safety_key -keyalg RSA -keysize 2048 -validity 10000 -storepass 123456 -keypass 123456 -dname "CN=Zakaria, O=SafetyCallJapan" -deststoretype pkcs12
 
-          # 3. إنشاء مفتاح التوقيع (JKS) تلقائياً بنفس البيانات المطلوبة
-          keytool -genkey -v \
-            -keystore release.jks \
-            -alias safety_key \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -storepass 123456 \
-            -keypass 123456 \
-            -dname "CN=Zakaria, O=SafetyCallJapan, C=JP" \
-            -deststoretype pkcs12
-
-          # 4. بناء نسخة الـ APK الموقعة (Native Build) لضمان عمل خدمة الحظر
+          # 2. بناء APK الموقّع باستخدام الملف الجديد
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/release.jks \
             -Pandroid.injected.signing.store.password=123456 \
             -Pandroid.injected.signing.key.alias=safety_key \
             -Pandroid.injected.signing.key.password=123456
 
-          # 5. بناء نسخة الـ AAB (للمتجر)
-          ./gradlew bundleRelease \
-            -Pandroid.injected.signing.store.file=$(pwd)/release.jks \
-            -Pandroid.injected.signing.store.password=123456 \
-            -Pandroid.injected.signing.key.alias=safety_key \
-            -Pandroid.injected.signing.key.password=123456
-
-          # 6. تجميع المخرجات وتغيير أسمائها كما طلبت
+          # 3. تنظيم المخرجات
           mkdir -p output
-          cp app/build/outputs/apk/release/app-release.apk ./output/Safety_Call_V1.apk
-          cp app/build/outputs/bundle/release/app-release.aab ./output/Safety_Call_V1.aab
+          cp app/build/outputs/apk/release/*.apk ./output/Safety_Call_V1.apk
           cp release.jks ./output/release.jks
 
-      - name: Upload Full Package
+      - name: Upload Package
         uses: actions/upload-artifact@v4
         with:
-          name: SafeCall-Japan-Full-Package
+          name: SafeCall-Japan-V1
           path: output/
-
